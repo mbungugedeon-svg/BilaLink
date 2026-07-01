@@ -49,6 +49,8 @@ function generatePost() {
     verified: feedIdCounter % 3 !== 0,
     ago,
     time: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+    likes: Math.floor(Math.random() * 24),
+    comments: Math.floor(Math.random() * 8),
     isNew: true,
   };
 }

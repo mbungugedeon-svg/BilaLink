@@ -47,5 +47,5 @@
   .conversation { grid-template-columns: 34px 1fr auto; }
   .chat-input { grid-template-columns: 1fr; }
   .bubble { max-width: 92%; }
-  .toast-stack { left: 10px; right: 10px; top: 76px; bottom: auto; }
+  .toast-stack { left: 10px; right: 10px; bottom: 92px; }
 }

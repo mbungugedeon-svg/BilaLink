@@ -331,7 +331,21 @@ function bind() {
   $$("[data-reply]").forEach((b) => b.addEventListener("click", () => toast(i18n.toastReplySent())));
 
   // Logout (topbar + profil)
-  // --- Fil d'actualité : contact vendeur ---
+  // --- Fil d'actualité : likes, commentaires, contact ---
+  $$("[data-like]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const span = btn.querySelector(".like-count");
+      if (span) {
+        const n = parseInt(span.textContent) || 0;
+        span.textContent = n + 1;
+        btn.classList.toggle("liked");
+      }
+    });
+  });
+  $$("[data-comment]").forEach((btn) => {
+    btn.addEventListener("click", (e) => { e.stopPropagation(); toast("💬 Commentaires bientôt disponibles."); });
+  });
   $$("[data-feed-contact]").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();

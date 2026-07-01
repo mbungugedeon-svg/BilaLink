@@ -1,24 +1,25 @@
 // js/services/notifications.js
-// Notifications pertinentes pour l'utilisateur : nouvelles offres dans sa
-// province, nouvelles demandes d'achat si producteur, messages, réservations.
+// Système de notifications simulées — donne l'impression d'un réseau actif.
+// Les notifications apparaissent automatiquement toutes les 25-45 secondes.
 
 import { state } from "./state.js";
-import { accountRole } from "./state.js";
 
-// Banques de messages selon le rôle de l'utilisateur connecté
-const NOTIF_BUYER = [
-  { icon: "🌾", text: (p) => `Nouvelle offre de Manioc publiée à ${p}.`, type: "listing" },
-  { icon: "🌾", text: (p) => `Une nouvelle production agricole vient d'être ajoutée près de ${p}.`, type: "listing" },
-  { icon: "📈", text: () => "Le prix du Maïs a baissé de 4% cette semaine.", type: "price" },
-  { icon: "💬", text: () => "Un vendeur a répondu à votre message.", type: "message" },
-  { icon: "✅", text: () => "Votre réservation a été confirmée par le vendeur.", type: "confirm" },
-];
-
-const NOTIF_SELLER = [
-  { icon: "🛒", text: (p) => `Nouvelle demande d'achat publiée à ${p}.`, type: "request" },
-  { icon: "💬", text: () => "Un acheteur vous a envoyé un message.", type: "message" },
-  { icon: "✅", text: () => "Un acheteur a réservé une partie de votre stock.", type: "reservation" },
-  { icon: "📈", text: () => "Les prix du marché ont été mis à jour pour vos produits.", type: "price" },
+const NOTIF_MESSAGES = [
+  { icon: "🛒", text: "Restaurant Ndule vient de réserver 500 kg de Manioc.", type: "reservation" },
+  { icon: "👁️", text: "Votre offre Tomate a été vue 12 fois ce matin.", type: "view" },
+  { icon: "💬", text: "Grossiste Matadi vous a envoyé un message.", type: "message" },
+  { icon: "✅", text: "Mama Thérèse a confirmé votre réservation de Manioc.", type: "confirm" },
+  { icon: "🆕", text: "Nouvelle demande : 80 caisses de tomate à Kinshasa.", type: "request" },
+  { icon: "📈", text: "Prix du Maïs en hausse de 3% cette semaine.", type: "price" },
+  { icon: "🌾", text: "Coopérative Bidiku vient de publier une nouvelle offre.", type: "listing" },
+  { icon: "🛒", text: "Jean-Marc K. a réservé votre stock d'Arachide.", type: "reservation" },
+  { icon: "⭐", text: "Ferme Kalenga a reçu une note de 5 étoiles.", type: "rating" },
+  { icon: "💬", text: "Restaurant Ndule : 'Pouvez-vous livrer demain matin ?'", type: "message" },
+  { icon: "👁️", text: "Votre offre Riz a été consultée 28 fois aujourd'hui.", type: "view" },
+  { icon: "✅", text: "Votre demande d'achat a reçu 3 nouvelles réponses.", type: "confirm" },
+  { icon: "🆕", text: "Nouvel acheteur inscrit à Lubumbashi.", type: "request" },
+  { icon: "📈", text: "Huile de palme : prix stable, forte demande à Boma.", type: "price" },
+  { icon: "🛒", text: "Mama Béatrice a réservé 5 paniers de Poisson fumé.", type: "reservation" },
 ];
 
 // Historique des notifications (persisté en mémoire)
@@ -28,17 +29,6 @@ let intervalId = null;
 let renderFn = null;
 
 export function setNotifRenderer(fn) { renderFn = fn; }
-
-function userProvince() {
-  return state.currentUser?.province || "votre région";
-}
-
-function pickNotif() {
-  const isSeller = accountRole() === "producteur";
-  const bank = isSeller ? NOTIF_SELLER : NOTIF_BUYER;
-  const item = bank[Math.floor(Math.random() * bank.length)];
-  return { icon: item.icon, text: item.text(userProvince()), type: item.type };
-}
 
 function pushNotif(notif) {
   const entry = {
@@ -55,21 +45,14 @@ function pushNotif(notif) {
   if (renderFn) renderFn(entry);
 }
 
-// Ajouter les notifications initiales (déjà "reçues"), adaptées au rôle
+// Ajouter les notifications initiales (déjà "reçues")
 export function seedInitialNotifs() {
-  const isSeller = accountRole() === "producteur";
-  const p = userProvince();
-  const seeds = isSeller
-    ? [
-        { icon: "🛒", text: `Nouvelle demande d'achat publiée à ${p}.`, type: "request", ago: "09:14" },
-        { icon: "✅", text: "Un acheteur a confirmé une réservation.", type: "reservation", ago: "08:52" },
-        { icon: "💬", text: "Un acheteur vous a envoyé un message.", type: "message", ago: "08:30" },
-      ]
-    : [
-        { icon: "🌾", text: `Nouvelle offre publiée à ${p}.`, type: "listing", ago: "09:14" },
-        { icon: "📈", text: "Prix du Maïs en baisse de 3% cette semaine.", type: "price", ago: "08:30" },
-        { icon: "💬", text: "Un vendeur a répondu à votre message.", type: "message", ago: "07:00" },
-      ];
+  const seeds = [
+    { icon: "🛒", text: "Restaurant Ndule a réservé 500 kg de Manioc.", type: "reservation", ago: "09:14" },
+    { icon: "✅", text: "Mama Thérèse a confirmé une réservation.", type: "confirm", ago: "08:52" },
+    { icon: "💬", text: "Grossiste Matadi vous a envoyé un message.", type: "message", ago: "08:30" },
+    { icon: "📈", text: "Prix du Maïs en hausse de 3% cette semaine.", type: "price", ago: "07:00" },
+  ];
   seeds.forEach((s, i) => {
     notifHistory.push({ id: notifIdCounter++, ...s, time: s.ago, read: i > 0 });
   });
@@ -82,17 +65,22 @@ export function markAllRead() {
   if (renderFn) renderFn(null);
 }
 
+let msgIdx = 0;
 export function startNotifSimulation() {
   if (intervalId) return; // déjà lancé
   seedInitialNotifs();
 
   // Première notification après 20s (pour la démo)
   setTimeout(() => {
-    pushNotif(pickNotif());
+    const notif = NOTIF_MESSAGES[msgIdx % NOTIF_MESSAGES.length];
+    msgIdx++;
+    pushNotif(notif);
 
     // Puis toutes les 30-45s
     intervalId = setInterval(() => {
-      pushNotif(pickNotif());
+      const notif = NOTIF_MESSAGES[msgIdx % NOTIF_MESSAGES.length];
+      msgIdx++;
+      pushNotif(notif);
     }, 30000 + Math.random() * 15000);
   }, 20000);
 }
