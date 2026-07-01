@@ -1,0 +1,74 @@
+/* =========================================================
+   css/animation.css
+   Toutes les transitions, hover, et micro-interactions.
+   Séparé de style.css pour pouvoir désactiver les animations
+   indépendamment (ex. prefers-reduced-motion) sans toucher au layout.
+   ========================================================= */
+
+button, a {
+  transition: all .25s ease;
+}
+
+.card {
+  border-radius: 20px;
+  transition: .25s;
+}
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+
+.desktop-nav button:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  background: var(--green-soft);
+  color: var(--green-dark);
+}
+
+.role-switch button {
+  transition: all .25s ease;
+}
+
+.btn {
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.btn:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.product-card {
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+.product-img img {
+  transition: transform .35s ease;
+}
+.product-card:hover .product-img img {
+  transform: scale(1.04);
+}
+
+.price-card {
+  transition: .25s;
+}
+.price-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-md);
+}
+
+.bottom-nav button {
+  transition: all .25s ease;
+}
+
+/* Respecte la préférence système de réduction des animations. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

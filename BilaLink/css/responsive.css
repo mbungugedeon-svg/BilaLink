@@ -1,0 +1,51 @@
+/* =========================================================
+   css/responsive.css
+   Toutes les media queries. Deux paliers : tablette/desktop
+   réduit (980px) et mobile (640px).
+   ========================================================= */
+
+@media (max-width: 980px) {
+  .desktop-nav { display: none; }
+  .hero, .detail-grid { grid-template-columns: 1fr; }
+  .hero { min-height: 0; }
+  .hero-media, .hero-media img { min-height: 360px; }
+  .stats-grid, .feature-grid, .steps, .cards, .compact-cards, .dash-grid, .price-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .request-form form, .request-card { grid-template-columns: 1fr; }
+  .profile-card { grid-template-columns: 1fr; }
+  .profile-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .inbox-grid { grid-template-columns: 1fr; }
+  .map-showcase { grid-template-columns: 1fr; }
+  .market-prices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .topbar { padding: 10px 12px; gap: 8px; }
+  .brand span:last-child { display: none; }
+  .role-switch button { padding: 8px 7px; font-size: 12px; }
+  .landing, .market, .detail, .dashboard, .requests, .prices, .form-layout, .auth { width: min(100% - 20px, 1180px); }
+  .hero { padding-top: 20px; }
+  .hero h1 { font-size: 40px; }
+  .hero-actions .btn { width: 100%; }
+  .hero-media, .hero-media img { min-height: 300px; }
+  .stats-grid, .feature-grid, .steps, .cards, .compact-cards, .dash-grid, .price-list,
+  .form-grid, .toggles, .detail-facts, .profile-info, .profile-actions,
+  .auth-role-select, .auth-location, .market-prices { grid-template-columns: 1fr; }
+  .market-panel { top: 61px; }
+  .search-line { grid-template-columns: 1fr; }
+  .filter-grid { grid-template-columns: 1fr; }
+  .section-title { align-items: start; flex-direction: column; }
+  .product-card { display: grid; grid-template-columns: 116px 1fr; }
+  .product-img { aspect-ratio: auto; height: 100%; min-height: 190px; }
+  .card-heading { display: block; }
+  .card-heading strong { display: block; text-align: left; margin-top: 6px; }
+  .seller-line .badge { width: 100%; justify-content: center; }
+  .card-actions .btn { min-width: 100%; }
+  .detail-info { padding: 16px; }
+  .request-card .btn { width: 100%; }
+  .panel-head { align-items: start; flex-direction: column; }
+  .conversation { grid-template-columns: 34px 1fr auto; }
+  .chat-input { grid-template-columns: 1fr; }
+  .bubble { max-width: 92%; }
+  .toast-stack { left: 10px; right: 10px; top: 76px; bottom: auto; }
+}
