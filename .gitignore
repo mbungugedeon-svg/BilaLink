@@ -1,0 +1,32 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Editor folders
+.vscode/
+.idea/
+
+# Dependency folders (si tu ajoutes plus tard du Node.js)
+node_modules/
+
+# Build outputs (si tu passes à React/Vite plus tard)
+dist/
+build/
+
+# Environment files (future backend possible)
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.bak
+
+# Cache
+.cache/
+
+# Optional: ignore system files
+*.swp
