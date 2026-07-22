@@ -14,7 +14,7 @@ export function requests() {
           <input name="title" placeholder="${i18n.reqPlaceholder()}" required>
           <input name="budget" placeholder="${i18n.reqBudget()}" required>
           <select name="province">${PROVINCES.map((p) => `<option>${p}</option>`).join("")}</select>
-          <input name="date" type="date" required>
+          <input name="date" type="date" min="${new Date().toISOString().slice(0, 10)}" required>
           <button class="btn primary">${i18n.btnPostReq()}</button>
         </form>
       </section>

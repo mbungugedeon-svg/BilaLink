@@ -1,91 +1,39 @@
 // js/services/accounts.js
-// Gestion multi-comptes persistants via localStorage
-// Chaque compte = { email, password, name, phone, province, city, role }
-// + ses publications et réservations sont liées à l'email
+// Couche d'accès aux comptes utilisateurs — appelle désormais le vrai
+// backend Flask (base de données) au lieu de localStorage.
+// Les fonctions ci-dessous gardent des noms proches de l'ancienne version
+// pour limiter les changements ailleurs dans l'app, mais sont maintenant
+// asynchrones et parlent réellement au serveur.
 
-const STORAGE_KEY = "bilalink_accounts";
-const SESSION_KEY = "bilalink_session";
+import { api } from "./api.js";
 
-export function getAccounts() {
+export async function apiRegister(fields) {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-  } catch { return {}; }
-}
-
-function saveAccounts(accounts) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
-}
-
-export function registerOrLogin(fields) {
-  const accounts = getAccounts();
-  const email = (fields.email || fields.phone).toLowerCase().trim();
-
-  if (!email) return { error: "Email ou téléphone requis." };
-
-  if (accounts[email]) {
-    // Compte existant : vérifier le mot de passe
-    if (accounts[email].password !== fields.password) {
-      return { error: "Mot de passe incorrect." };
-    }
-    // Connexion réussie — on conserve le profil stocké, pas les champs du formulaire
-    return { account: accounts[email], isNew: false };
-  } else {
-    // Nouveau compte
-    const account = {
-      email,
-      password: fields.password,
-      name: fields.name || "Utilisateur BilaLink",
-      phone: fields.phone || email,
-      province: fields.province || "Kinshasa",
-      city: fields.city || "Kinshasa",
-      role: fields.role || "acheteur",
-      createdAt: Date.now(),
-    };
-    accounts[email] = account;
-    saveAccounts(accounts);
-    return { account, isNew: true };
+    const data = await api.post("/api/auth/register", fields);
+    return { account: data.user, isNew: true };
+  } catch (e) {
+    return { error: e.message };
   }
 }
 
-export function saveSession(email) {
-  localStorage.setItem(SESSION_KEY, email);
+export async function apiLogin(fields) {
+  try {
+    const data = await api.post("/api/auth/login", fields);
+    return { account: data.user, isNew: false };
+  } catch (e) {
+    return { error: e.message };
+  }
 }
 
-export function clearSession() {
-  localStorage.removeItem(SESSION_KEY);
+export async function apiLogout() {
+  try { await api.post("/api/auth/logout"); } catch { /* ignore */ }
 }
 
-export function getSavedSession() {
-  return localStorage.getItem(SESSION_KEY);
-}
-
-// Données liées au compte : publications et réservations
-const DATA_KEY = (email, type) => `bilalink_${type}_${email}`;
-
-export function getAccountListings(email) {
-  try { return JSON.parse(localStorage.getItem(DATA_KEY(email, "listings")) || "[]"); } catch { return []; }
-}
-export function saveAccountListings(email, listings) {
-  localStorage.setItem(DATA_KEY(email, "listings"), JSON.stringify(listings));
-}
-
-export function getAccountReservationsSent(email) {
-  try { return JSON.parse(localStorage.getItem(DATA_KEY(email, "reservations_sent")) || "[]"); } catch { return []; }
-}
-export function saveAccountReservationsSent(email, list) {
-  localStorage.setItem(DATA_KEY(email, "reservations_sent"), JSON.stringify(list));
-}
-
-export function getAccountReservationsReceived(email) {
-  try { return JSON.parse(localStorage.getItem(DATA_KEY(email, "reservations_received")) || "[]"); } catch { return []; }
-}
-export function saveAccountReservationsReceived(email, list) {
-  localStorage.setItem(DATA_KEY(email, "reservations_received"), JSON.stringify(list));
-}
-
-export function getAccountMessages(email) {
-  try { return JSON.parse(localStorage.getItem(DATA_KEY(email, "messages")) || "{}"); } catch { return {}; }
-}
-export function saveAccountMessages(email, messages) {
-  localStorage.setItem(DATA_KEY(email, "messages"), JSON.stringify(messages));
+export async function fetchCurrentUser() {
+  try {
+    const data = await api.get("/api/auth/me");
+    return data.user || null;
+  } catch {
+    return null;
+  }
 }

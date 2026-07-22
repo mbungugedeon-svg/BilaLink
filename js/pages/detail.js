@@ -2,58 +2,25 @@
 import { shell } from "../components/navbar.js";
 import { productCard, emptyState, productImage } from "../components/productCard.js";
 import { fact } from "../components/formFields.js";
-import { fmtPrice, stars, initials, esc, telHref, waHref } from "../utils/format.js";
+import { fmtPrice, stars, initials, esc, telHref } from "../utils/format.js";
 import { icon, catOf } from "../utils/helpers.js";
 import { state } from "../services/state.js";
 import { listings } from "../data/products.js";
 import { i18n } from "../i18n.js";
-import { getMessages } from "../services/marketplace.js";
 
 export function detail() {
   const l = listings.find((x) => x.id === state.selectedId) || listings[0];
   const similar = listings.filter((x) => x.id !== l.id && catOf(x.crop) === catOf(l.crop)).slice(0, 3);
-  const message = `Bonjour ${l.seller}, je suis intéressé par votre offre de ${l.crop} (${l.qty}) sur BilaLink.`;
   const imgSrc = productImage(l.crop, l.customPhoto);
 
   const alreadyReserved = state.authed && state.reservations.some((r) => r.listingId === l.id);
+  const isOwnListing = state.authed && state.currentUser?.id === l.sellerId;
 
-  const reserveBtn = alreadyReserved
-    ? `<button class="btn reserve" disabled style="opacity:.6;cursor:default">✅ Déjà réservé</button>`
-    : `<button class="btn reserve" data-reserve="${l.id}">${i18n.btnReserve()}</button>`;
-
-  // Messagerie in-app
-  const convKey = `conv_${l.id}_${l.sellerEmail || l.seller}`;
-  const convMessages = getMessages(convKey);
-
-  const chatHtml = `
-    <section class="section chat-section">
-      <div class="section-head">
-        <h2>💬 Message au producteur</h2>
-        <p>Discutez directement avec ${esc(l.seller)} avant de passer commande.</p>
-      </div>
-      <div class="chat-widget" data-conv="${convKey}" data-seller-email="${esc(l.sellerEmail || '')}" data-seller-name="${esc(l.seller)}">
-        <div class="chat-messages" id="chatMessages">
-          ${convMessages.length === 0
-            ? `<div class="chat-empty">Aucun message · Envoyez le premier !</div>`
-            : convMessages.slice().reverse().map((m) => `
-              <div class="bubble ${m.senderEmail === state.currentUser?.email ? 'me' : 'other'}">
-                <span class="bubble-name">${esc(m.senderName)}</span>
-                <p>${esc(m.text)}</p>
-                <small>${esc(m.time)}</small>
-              </div>`).join("")
-          }
-        </div>
-        ${state.authed
-          ? `<div class="chat-input-row">
-              <input id="chatInput" placeholder="Votre message à ${esc(l.seller)}..." maxlength="500">
-              <button class="btn primary" id="chatSend" data-conv="${convKey}" data-seller-email="${esc(l.sellerEmail || '')}" data-listing="${l.id}">Envoyer</button>
-             </div>`
-          : `<div class="chat-auth-hint">
-              <button class="btn soft wide" data-go="auth">🔒 Connectez-vous pour envoyer un message</button>
-             </div>`
-        }
-      </div>
-    </section>`;
+  const reserveBtn = isOwnListing
+    ? ""
+    : alreadyReserved
+      ? `<button class="btn reserve" disabled style="opacity:.6;cursor:default">✅ Déjà réservé</button>`
+      : `<button class="btn reserve" data-reserve="${l.id}">${i18n.btnReserve()}</button>`;
 
   return shell(`
     <main class="detail">
@@ -94,15 +61,13 @@ export function detail() {
           </div>
           <div class="detail-actions">
             <a class="btn primary" href="${telHref(l.phone)}">${icon("phone")} ${i18n.btnCall()}</a>
-            <a class="btn whatsapp" href="${waHref(l.phone, message)}" target="_blank" rel="noopener">WhatsApp</a>
+            ${!isOwnListing ? `<button class="btn soft" id="openChat" data-listing="${l.id}" data-seller-id="${l.sellerId}">💬 Discuter</button>` : ""}
             ${reserveBtn}
             <button class="btn soft" id="shareBtn">${icon("share")} ${i18n.btnShare()}</button>
           </div>
           ${!state.authed ? `<p class="auth-hint">💡 <button class="link-btn" data-go="auth">Connectez-vous</button> pour réserver et envoyer des messages.</p>` : ""}
         </article>
       </section>
-
-      ${chatHtml}
 
       <section class="section map-section">
         <div class="section-head"><h2>${i18n.supplierLocation()}</h2><p>${i18n.mapSub()}</p></div>

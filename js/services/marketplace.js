@@ -1,15 +1,17 @@
 // js/services/marketplace.js
-import { listings, bumpListingId, buyerRequests, bumpRequestId } from "../data/products.js";
+import { listings, buyerRequests, bumpRequestId } from "../data/products.js";
 import { marketPrices } from "../data/prices.js";
 import { catOf } from "../utils/helpers.js";
 import { state, toast } from "./state.js";
 import { i18n } from "../i18n.js";
-import {
-  saveAccountListings, getAccountListings,
-  saveAccountReservationsSent, getAccountReservationsSent,
-  saveAccountReservationsReceived, getAccountReservationsReceived,
-  getAccounts, saveAccountMessages, getAccountMessages
-} from "./accounts.js";
+import { api } from "./api.js";
+
+// --- Catalogue : recharge depuis le backend et remplace le tableau en mémoire ---
+export async function refreshListings() {
+  const data = await api.get("/api/listings");
+  listings.length = 0;
+  data.listings.forEach((l) => listings.push(l));
+}
 
 export function filteredListings() {
   const q = state.search.trim().toLowerCase();
@@ -22,7 +24,7 @@ export function filteredListings() {
       && (state.category === "Toutes" || catOf(l.crop) === state.category)
       && (!state.minPrice || l.price >= Number(state.minPrice))
       && (!state.maxPrice || l.price <= Number(state.maxPrice))
-      && (state.availability === "Toutes" || l.available.toLowerCase().includes(state.availability.toLowerCase()))
+      && (state.availability === "Toutes" || (l.available || "").toLowerCase().includes(state.availability.toLowerCase()))
       && (state.maxDistance === "Toutes" || l.distance <= Number(state.maxDistance))
       && (!state.verifiedOnly || l.verified)
       && (Number(l.rating) >= Number(state.minRating));
@@ -50,7 +52,8 @@ export function marketTone(listing) {
   return { cls: "fair", text: i18n.toneFair() };
 }
 
-export function reserveListing(id) {
+// --- Réservations (backend réel) ---
+export async function reserveListing(id) {
   if (!state.authed) {
     state.pendingPage = "detail";
     state.page = "auth";
@@ -62,143 +65,62 @@ export function reserveListing(id) {
     return false;
   }
 
-  const listing = listings.find((l) => l.id === Number(id));
-  if (!listing) return false;
-
-  const buyerEmail = state.currentUser.email;
-  const exists = state.reservations.some((r) => r.listingId === listing.id);
-  if (exists) {
-    toast("⚠️ Vous avez déjà réservé cette offre.");
+  try {
+    const data = await api.post("/api/reservations", { listingId: Number(id) });
+    state.reservations.unshift(data.reservation);
+    toast(`✅ Réservation envoyée à ${data.reservation.sellerName} !`);
+    return true;
+  } catch (e) {
+    toast("⚠️ " + e.message);
     return false;
   }
-
-  const reservation = {
-    id: Date.now(),
-    listingId: listing.id,
-    crop: listing.crop,
-    qty: listing.qty,
-    price: listing.price,
-    unit: listing.unit,
-    sellerName: listing.seller,
-    sellerPhone: listing.phone,
-    sellerEmail: listing.sellerEmail || "",
-    sellerProvince: listing.province,
-    sellerCity: listing.city,
-    buyerName: state.currentUser.name,
-    buyerPhone: state.currentUser.phone,
-    buyerEmail,
-    buyerProvince: state.currentUser.province,
-    status: "En attente de confirmation",
-    date: new Date().toLocaleDateString("fr-FR"),
-  };
-
-  // Sauvegarder côté acheteur
-  state.reservations.unshift(reservation);
-  saveAccountReservationsSent(buyerEmail, state.reservations);
-
-  // Sauvegarder côté producteur (en cherchant son email dans les listings)
-  const sellerEmail = listing.sellerEmail;
-  if (sellerEmail) {
-    const received = getAccountReservationsReceived(sellerEmail);
-    received.unshift(reservation);
-    saveAccountReservationsReceived(sellerEmail, received);
-  }
-
-  // Aussi sauvegarder dans reservationsReceived global (accessible si producteur connecté)
-  if (!state.reservationsReceived) state.reservationsReceived = [];
-  // On stocke dans une clé globale accessible à tous les producteurs
-  const globalKey = `bilalink_reservation_${reservation.id}`;
-  try { localStorage.setItem(globalKey, JSON.stringify(reservation)); } catch {}
-
-  toast(`✅ Réservation envoyée à ${listing.seller} !`);
-  return true;
 }
 
-export function confirmReservation(reservationId) {
-  // Mettre à jour côté producteur
-  const r = state.reservationsReceived?.find((x) => x.id === reservationId)
-         || state.reservations?.find((x) => x.id === reservationId);
-  if (r) {
-    r.status = "Confirmée ✅";
-    if (state.currentUser?.role === "producteur") {
-      saveAccountReservationsReceived(state.currentUser.email, state.reservationsReceived || []);
-    }
-    // Mettre à jour aussi dans localStorage global
-    try {
-      const stored = JSON.parse(localStorage.getItem(`bilalink_reservation_${reservationId}`) || "{}");
-      stored.status = "Confirmée ✅";
-      localStorage.setItem(`bilalink_reservation_${reservationId}`, JSON.stringify(stored));
-      // Synchroniser côté acheteur
-      if (stored.buyerEmail) {
-        const sent = getAccountReservationsSent(stored.buyerEmail);
-        const idx = sent.findIndex((x) => x.id === reservationId);
-        if (idx >= 0) { sent[idx].status = "Confirmée ✅"; saveAccountReservationsSent(stored.buyerEmail, sent); }
-      }
-    } catch {}
-    toast(`✅ Réservation confirmée ! L'acheteur en sera informé.`);
+export async function confirmReservation(reservationId) {
+  try {
+    const data = await api.post(`/api/reservations/${reservationId}/confirm`);
+    applyReservationUpdate(data.reservation);
+    toast("✅ Réservation confirmée ! L'acheteur en sera informé.");
+  } catch (e) {
+    toast("⚠️ " + e.message);
   }
 }
 
-export function rejectReservation(reservationId) {
-  const r = state.reservationsReceived?.find((x) => x.id === reservationId)
-         || state.reservations?.find((x) => x.id === reservationId);
-  if (r) {
-    r.status = "Refusée ❌";
-    if (state.currentUser?.role === "producteur") {
-      saveAccountReservationsReceived(state.currentUser.email, state.reservationsReceived || []);
-    }
-    try {
-      const stored = JSON.parse(localStorage.getItem(`bilalink_reservation_${reservationId}`) || "{}");
-      stored.status = "Refusée ❌";
-      localStorage.setItem(`bilalink_reservation_${reservationId}`, JSON.stringify(stored));
-      if (stored.buyerEmail) {
-        const sent = getAccountReservationsSent(stored.buyerEmail);
-        const idx = sent.findIndex((x) => x.id === reservationId);
-        if (idx >= 0) { sent[idx].status = "Refusée ❌"; saveAccountReservationsSent(stored.buyerEmail, sent); }
-      }
-    } catch {}
+export async function rejectReservation(reservationId) {
+  try {
+    const data = await api.post(`/api/reservations/${reservationId}/reject`);
+    applyReservationUpdate(data.reservation);
     toast("Réservation refusée.");
+  } catch (e) {
+    toast("⚠️ " + e.message);
   }
 }
 
-export function publishListing(fields) {
-  const listing = {
-    id: bumpListingId(),
+function applyReservationUpdate(updated) {
+  [state.reservations, state.reservationsReceived].forEach((list) => {
+    const idx = (list || []).findIndex((r) => r.id === updated.id);
+    if (idx >= 0) list[idx] = updated;
+  });
+}
+
+// --- Publication (backend réel) ---
+export async function publishListing(fields) {
+  const data = await api.post("/api/listings", {
     crop: fields.crop,
-    qty: fields.qty || "Stock disponible",
-    price: Number(fields.price || 0),
-    unit: fields.unit || "unité",
+    qty: fields.qty,
+    price: fields.price,
+    unit: fields.unit,
     province: fields.province,
-    city: fields.city || fields.province,
-    distance: Math.floor(Math.random() * 120) + 8,
-    seller: state.currentUser?.name || "Nouveau producteur",
-    phone: state.currentUser?.phone || "+243 990 000 000",
-    sellerEmail: state.currentUser?.email || "",
-    rating: 5.0,
-    sales: 0,
-    available: fields.availableNow ? "Disponible maintenant" : "Sur rendez-vous",
-    verified: true,
-    views: 0,
-    whatsapp: 0,
-    calls: 0,
-    published: new Date().toLocaleDateString("fr-FR"),
-    quality: fields.quality,
+    city: fields.city,
+    availableNow: !!fields.availableNow,
     delivery: fields.delivery,
-    negotiable: fields.negotiable,
-    desc: fields.desc || "Produit local disponible pour vente directe.",
-    // Photo uploadée par le producteur (base64)
-    customPhoto: fields.customPhoto || null,
-  };
-  listings.unshift(listing);
-
-  // Persister dans le compte producteur
-  if (state.currentUser?.email) {
-    const myListings = getAccountListings(state.currentUser.email);
-    myListings.unshift(listing);
-    saveAccountListings(state.currentUser.email, myListings);
-  }
-
-  return listing;
+    negotiable: !!fields.negotiable,
+    quality: fields.quality,
+    desc: fields.desc,
+    customPhoto: fields.customPhoto,
+  });
+  listings.unshift(data.listing);
+  return data.listing;
 }
 
 export function publishBuyerRequest(fields) {
@@ -216,45 +138,73 @@ export function publishBuyerRequest(fields) {
   return request;
 }
 
-// --- Messagerie ---
-export function getConversationKey(otherEmail, listingId) {
-  return `conv_${listingId}_${[state.currentUser?.email, otherEmail].sort().join("_")}`;
+// --- Messagerie (backend réel, entre deux vrais comptes) ---
+export function getConversationKey(otherUserId, listingId) {
+  const myId = state.currentUser?.id;
+  const ids = [myId, otherUserId].sort((a, b) => a - b);
+  return `conv_${listingId}_${ids[0]}_${ids[1]}`;
 }
 
-export function getMessages(conversationKey) {
-  if (!state.currentUser) return [];
-  const allConvs = getAccountMessages(state.currentUser.email);
-  return allConvs[conversationKey] || [];
+export function otherUserIdFromKey(conversationKey) {
+  const parts = conversationKey.split("_"); // conv_{listingId}_{idA}_{idB}
+  const ids = [Number(parts[2]), Number(parts[3])];
+  return ids.find((id) => id !== state.currentUser?.id);
 }
 
-export function sendMessage(conversationKey, text, meta = {}) {
-  if (!state.currentUser || !text.trim()) return;
-  const msg = {
-    id: Date.now(),
-    senderEmail: state.currentUser.email,
-    senderName: state.currentUser.name,
-    text: text.trim(),
-    time: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
-  };
+export function listingIdFromKey(conversationKey) {
+  return Number(conversationKey.split("_")[1]);
+}
 
-  // Sauvegarder dans les messages du compte courant
-  const myConvs = getAccountMessages(state.currentUser.email);
-  if (!myConvs[conversationKey]) myConvs[conversationKey] = [];
-  myConvs[conversationKey].unshift(msg);
-  saveAccountMessages(state.currentUser.email, myConvs);
+export async function loadConversation(conversationKey) {
+  const data = await api.get(`/api/messages/${encodeURIComponent(conversationKey)}`);
+  state.conversations[conversationKey] = data.messages;
+  // La lecture côté serveur vient de marquer ces messages comme lus :
+  // on rafraîchit la liste pour que le badge "Messages" se mette à jour.
+  try {
+    const convs = await api.get("/api/conversations");
+    state.conversationList = convs.conversations;
+  } catch { /* non bloquant */ }
+  return data.messages;
+}
 
-  // Sauvegarder aussi dans le compte de l'autre partie si son email est connu
-  if (meta.otherEmail) {
-    const otherConvs = getAccountMessages(meta.otherEmail);
-    if (!otherConvs[conversationKey]) otherConvs[conversationKey] = [];
-    otherConvs[conversationKey].unshift(msg);
-    saveAccountMessages(meta.otherEmail, otherConvs);
+// Nombre de conversations ayant un dernier message non lu envoyé par l'autre
+// partie (utilisé pour le badge de l'icône Messages dans la navbar).
+export function unreadConversationCount() {
+  if (!state.authed) return 0;
+  return (state.conversationList || []).filter(
+    (c) => c.lastMessage && c.lastMessage.receiverId === state.currentUser?.id && !c.lastMessage.read
+  ).length;
+}
+
+// Recharge la liste des conversations depuis le serveur. À appeler à chaque
+// arrivée sur la page Messages : sinon un utilisateur qui n'a fait qu'ouvrir
+// l'app (sans envoyer/lire de message lui-même) verrait une liste périmée
+// et ne verrait pas les messages reçus entre-temps d'un autre compte.
+export async function refreshConversationList() {
+  if (!state.authed) return;
+  try {
+    const convs = await api.get("/api/conversations");
+    state.conversationList = convs.conversations;
+  } catch (e) {
+    console.warn("Liste des conversations indisponible :", e);
   }
+}
 
-  // Mettre à jour state
-  if (!state.conversations) state.conversations = {};
-  if (!state.conversations[conversationKey]) state.conversations[conversationKey] = [];
-  state.conversations[conversationKey].unshift(msg);
-
-  return msg;
+export async function sendMessage(conversationKey, text, { receiverId, listingId } = {}) {
+  if (!state.currentUser || !text.trim()) return;
+  try {
+    const data = await api.post("/api/messages", {
+      conversationKey, text: text.trim(), receiverId, listingId,
+    });
+    if (!state.conversations[conversationKey]) state.conversations[conversationKey] = [];
+    state.conversations[conversationKey].unshift(data.message);
+    // Rafraîchir la liste des conversations (pour les tableaux de bord)
+    try {
+      const convs = await api.get("/api/conversations");
+      state.conversationList = convs.conversations;
+    } catch { /* non bloquant */ }
+    return data.message;
+  } catch (e) {
+    toast("⚠️ " + e.message);
+  }
 }

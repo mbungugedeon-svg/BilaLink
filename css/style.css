@@ -56,7 +56,7 @@ h1, h2, h3, p { margin-top: 0; }
 
 /* ---------- App shell ---------- */
 .app-shell { min-height: 100vh; padding-top: 68px; }
-.with-bottom { padding-bottom: 86px; }
+.with-bottom { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 
 .topbar {
   position: fixed;
@@ -64,15 +64,17 @@ h1, h2, h3, p { margin-top: 0; }
   left: 0;
   right: 0;
   z-index: 20;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  column-gap: 16px;
   padding: 14px clamp(16px, 5vw, 64px);
   background: rgba(255, 255, 255, .9);
   border-bottom: 1px solid rgba(225, 232, 227, .8);
   backdrop-filter: blur(14px);
 }
+.brand { justify-self: start; }
+.topbar-right { justify-self: end; }
 .brand, .desktop-nav button, .role-switch button, .bottom-nav button {
   border: 0;
   background: transparent;
@@ -231,7 +233,7 @@ h1, h2, h3, p { margin-top: 0; }
 
 /* ---------- Market / catalogue ---------- */
 .market { padding-top: 20px; }
-.market-panel { padding: 14px; position: sticky; top: 68px; z-index: 10; transition: top .25s ease; }
+.market-panel { padding: 10px 14px; position: sticky; top: 68px; z-index: 10; transition: top .25s ease; }
 .search-line { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
 .searchbox {
   display: flex; align-items: center; gap: 10px;
@@ -242,15 +244,22 @@ h1, h2, h3, p { margin-top: 0; }
 .request-form input, .request-form select, .auth-card input {
   width: 100%; border: 0; outline: 0; background: transparent; color: var(--ink);
 }
-.suggestions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-.suggestions button {
-  border: 1px solid #d4e6da; color: var(--green-dark); background: var(--green-soft);
-  padding: 8px 10px; border-radius: 999px;
+/* Suggestions : une seule ligne, défilement horizontal (pas de retour à la ligne qui pousse le contenu) */
+.suggestions {
+  display: flex; gap: 8px; flex-wrap: nowrap; margin-top: 8px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  padding-bottom: 2px;
 }
-.filters { margin-top: 12px; }
+.suggestions::-webkit-scrollbar { display: none; }
+.suggestions button {
+  flex: 0 0 auto;
+  border: 1px solid #d4e6da; color: var(--green-dark); background: var(--green-soft);
+  padding: 8px 10px; border-radius: 999px; white-space: nowrap;
+}
+.filters { margin-top: 8px; }
 .filters summary { color: var(--green-dark); font-weight: 800; cursor: pointer; }
 .filter-grid, .form-grid {
-  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-top: 12px;
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-top: 8px;
 }
 .field { display: grid; gap: 8px; padding: 12px; background: #f8fbf9; border: 1px solid var(--line); border-radius: 8px; }
 .field span { color: var(--muted); font-size: 12px; font-weight: 800; }
@@ -457,12 +466,12 @@ h1, h2, h3, p { margin-top: 0; }
 
 /* ---------- Bottom nav / toasts ---------- */
 .bottom-nav {
-  position: fixed; left: 50%; bottom: 14px; z-index: 30;
-  transform: translateX(-50%);
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
-  width: min(520px, calc(100% - 24px)); padding: 6px;
-  background: rgba(255, 255, 255, .95); border: 1px solid var(--line); border-radius: 8px;
-  box-shadow: var(--shadow); backdrop-filter: blur(14px);
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
+  width: 100%;
+  padding: 6px max(6px, env(safe-area-inset-left)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-right));
+  background: rgba(255, 255, 255, .98); border-top: 1px solid var(--line); border-radius: 0;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, .06); backdrop-filter: blur(14px);
 }
 .bottom-nav button { display: grid; place-items: center; gap: 3px; min-height: 58px; border-radius: 8px; color: var(--muted); font-size: 12px; font-weight: 800; }
 .bottom-nav .active { color: var(--green-dark); background: var(--green-soft); }
@@ -837,6 +846,25 @@ h1, h2, h3, p { margin-top: 0; }
   transition: background .15s;
 }
 .notif-bell:hover { background: var(--green-soft, #f0fdf4); }
+
+/* --- Icône Messages (même traitement que la cloche notifications) --- */
+.icon-btn.messages-btn {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  color: var(--ink, #1a2e1a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s;
+}
+.icon-btn.messages-btn:hover { background: var(--green-soft, #f0fdf4); }
+.icon-btn.messages-btn.nav-active { color: var(--green-dark, #14502f); background: var(--green-soft, #f0fdf4); }
+.icon-btn.messages-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
 .notif-badge {
   position: absolute;
   top: 0; right: 0;
@@ -1095,18 +1123,8 @@ h1, h2, h3, p { margin-top: 0; }
 }
 
 /* =========================================================
-   PATCH 4 : Fil d'actualité + Navbar scroll intelligent
+   PATCH 4 : Fil d'actualité — navbar fixe (ne se cache plus au scroll)
    ========================================================= */
-
-/* --- Navbar scroll --- */
-.topbar {
-  will-change: transform;
-}
-/* bottom-nav doit aussi supporter le transform */
-.bottom-nav {
-  will-change: transform;
-  transition: transform .28s cubic-bezier(.4,0,.2,1);
-}
 
 /* --- Badge feed sur icône accueil --- */
 .feed-nav-badge {

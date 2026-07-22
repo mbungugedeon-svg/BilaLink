@@ -24,6 +24,9 @@ const ICON_PATHS = {
   share: '<circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="m8.6 13.5 6.8 4"></path><path d="m15.4 6.5-6.8 4"></path>',
   bot: '<rect x="4" y="8" width="16" height="12" rx="4"></rect><path d="M12 4v4"></path><circle cx="9" cy="14" r="1"></circle><circle cx="15" cy="14" r="1"></circle>',
   leaf: '<path d="M5 19c7.5-.1 12.6-5.1 14-14-8.9 1.4-13.9 6.5-14 14Z"></path><path d="M5 19c3.4-4 7.2-7 12-9"></path>',
+  home: '<path d="m3 11 9-8 9 8"></path><path d="M5 10v10h14V10"></path><path d="M10 20v-6h4v6"></path>',
+  user: '<circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4.5 5-6 8-6s6.5 1.5 8 6"></path>',
+  chat: '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>',
 };
 
 export function icon(name) {

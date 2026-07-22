@@ -17,6 +17,3 @@ export const esc = (value) =>
   }[c]));
 
 export const telHref = (phone) => `tel:${phone.replace(/\s/g, "")}`;
-
-export const waHref = (phone, text) =>
-  `https://wa.me/${phone.replace(/[^\d]/g, "")}?text=${encodeURIComponent(text)}`;

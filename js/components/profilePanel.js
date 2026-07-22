@@ -33,23 +33,3 @@ export function profilePanel(user) {
     </div>
   </section>`;
 }
-
-export function inboxPanel(conversations) {
-  return `<section class="panel inbox">
-    <div class="panel-head"><h2>${t("In-App Messaging","Discussion dans l'application")}</h2><button class="btn soft" id="newMessageBtn">${t("New Message","Nouveau message")}</button></div>
-    <div class="inbox-grid">
-      <div class="conversation-list">
-        ${conversations.map((c) => `<button class="conversation" data-chat="${c.id}">
-          <span class="avatar">${initials(c.with)}</span>
-          <span><strong>${esc(c.with)}</strong><small>${esc(c.role)} · ${esc(c.product)}</small></span>
-          ${c.unread ? `<b>${c.unread}</b>` : ""}
-        </button>`).join("")}
-      </div>
-      <div class="chat-box">
-        <div class="bubble other">${t("Hello, I'm interested in your listing. How much stock is available?","Bonjour, je suis intéressé par votre offre. Quelle quantité reste disponible ?")}</div>
-        <div class="bubble me">${t("Hello, the stock is available. We can discuss the price here before WhatsApp.","Bonjour, le stock est disponible. Nous pouvons discuter du prix ici avant WhatsApp.")}</div>
-        <div class="chat-input"><input id="messageInput" placeholder="${t("Write a message...","Écrire un message...")}"><button class="btn primary" id="sendMessageBtn">${t("Send","Envoyer")}</button></div>
-      </div>
-    </div>
-  </section>`;
-}

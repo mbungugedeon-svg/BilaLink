@@ -33,7 +33,7 @@
   .auth-role-select, .auth-location, .market-prices { grid-template-columns: 1fr; }
   .market-panel { top: 61px; }
   .search-line { grid-template-columns: 1fr; }
-  .filter-grid { grid-template-columns: 1fr; }
+  .filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .section-title { align-items: start; flex-direction: column; }
   .product-card { display: grid; grid-template-columns: 116px 1fr; }
   .product-img { aspect-ratio: auto; height: 100%; min-height: 190px; }
@@ -47,5 +47,21 @@
   .conversation { grid-template-columns: 34px 1fr auto; }
   .chat-input { grid-template-columns: 1fr; }
   .bubble { max-width: 92%; }
-  .toast-stack { left: 10px; right: 10px; bottom: 92px; }
+  .toast-stack { left: 10px; right: 10px; bottom: 84px; }
+}
+
+/* Très petits écrans (téléphones étroits, ~360-390px) : les filtres
+   repassent en une seule colonne pour rester lisibles. */
+@media (max-width: 420px) {
+  .filter-grid { grid-template-columns: 1fr; }
+  .bottom-nav button span:last-child { font-size: 10px; }
+}
+
+/* Barre du haut : évite le débordement horizontal sur téléphones étroits
+   (icône messages + cloche + badge de session + sélecteur de langue) */
+@media (max-width: 480px) {
+  .role-tag { display: none; }
+  .session-badge { padding: 4px 8px 4px 4px; gap: 6px; }
+  .session-badge span:not(.avatar-xs) { max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topbar-right { gap: 6px; }
 }

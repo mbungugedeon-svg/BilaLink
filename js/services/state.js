@@ -20,7 +20,7 @@ export const state = {
   publishPreview: null,
   toasts: [],
   aiText: "",
-  // Réservations envoyées (acheteur) et reçues (producteur) — chargées depuis localStorage
+  // Réservations envoyées (acheteur) et reçues (producteur) — chargées depuis le backend
   reservations: [],
   reservationsReceived: [],
   // Image sélectionnée lors de la publication (base64 ou url)
@@ -28,6 +28,15 @@ export const state = {
   // Conversations en mémoire : { conversationKey: [{role, text, time}] }
   conversations: {},
   activeConversationId: null,
+  // Liste des conversations (résumé) chargée depuis le backend
+  conversationList: [],
+  // Notifications réelles chargées depuis le backend
+  notifications: [],
+  unreadNotifs: 0,
+  // Mode du formulaire d'authentification : "register" (par défaut) ou "login"
+  authMode: "register",
+  // Dernier id de publication vu dans le fil (sert au badge "nouveau", basé sur le vrai catalogue)
+  lastFeedVisitId: 0,
 };
 
 let onNavigate = () => {};
