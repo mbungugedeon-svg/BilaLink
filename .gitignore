@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+
+# Database
+*.db
+
+# Secrets
+.secret_key
+.env
+.env.*
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
